@@ -1,0 +1,42 @@
+name: Build Windows Desktop App
+
+on:
+  workflow_dispatch: # 支持在网页上手动点击按钮一键运行
+
+jobs:
+  build-windows:
+    runs-on: windows-latest # 使用 GitHub 预装有 VS2022 C++ 生成工具的 Windows 云端机
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Prepare Windows Environment Config
+        run: |
+          Copy-Item apps/desktop/.env.windows.example apps/desktop/.env.windows
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Build Core
+        run: pnpm run build
+
+      - name: Package Windows Desktop EXE
+        run: pnpm run package:desktop:win:x64:unsigned
+
+      - name: Upload Installer EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeepSeek-Harness-Windows-Installer
+          path: apps/desktop/.desktop-build/targets/win-x64/unsigned-artifacts/*.exe
